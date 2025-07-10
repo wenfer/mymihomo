@@ -5,7 +5,6 @@ ADD https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb /ro
 ADD https://github.com/eorendel/clash-dashboard/archive/refs/heads/main.zip  /tmp/dashboard.zip
 ADD https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz  /tmp/yacd.tar.xz
 COPY ./run.sh /bin/run
-COPY ./Country.mmdb  /root/files/Country.mmdb
 COPY ./dl-clash-conf.sh /bin/dl-clash-conf
 COPY ./index.html /etc/clash-dashboard/index.html
 COPY ./update-clash-conf.sh /bin/update-clash-conf
