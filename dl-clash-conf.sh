@@ -1,50 +1,52 @@
 #!/usr/bin/env sh
 # 下载配置文件
 
-ConfFile=$1
-ConfPath=`dirname $ConfFile`
-mkdir -p $ConfPath
-wget -O $ConfFile   -q  "$CONF_URL"
+CONF_FILE=$1
+CONF_PATH=$(dirname "$CONF_FILE")
+mkdir -p "${CONF_PATH}"
+
+echo "从${CONF_URL} 下载配置文件并写入到${CONF_FILE}"
+curl -L --compressed -A "Wget/1.21.3" "$CONF_URL"  -o "$CONF_FILE"  --retry 3
+
 # 若文件下载失败, 则返回并报错
-if [ $? -ne 0 ];
-then
-  echo "config file download fail"
+if [ $? -eq 0 ]; then
+  if [ "$BASE64_CONVERT" = "true" ]; then
+      echo "配置文件转换中..."
+      mv "${CONF_FILE}" "${CONF_FILE}".ori && base64 -d "${CONF_FILE}".ori > "${CONF_FILE}"
+  fi
+else
+  echo "配置文件下载失败"
   exit $?
 fi
 
 
-
-modify_config(){
-  # 检查配置文件中是否包含指定的键
-  if grep -Eq "^$1:" "$ConfFile"; then
-    # 如果存在该键，则直接修改值
-    sed -i "s/^$1:.*/$1: $2/" "$ConfFile"
-    echo "已修改 $1 的值为 $2"
-  else
-    # 如果键不存在，则追加配置项
-    echo "$1: $2" >> "$ConfFile"
-    echo "配置项不存在，已添加新配置到 $ConfFile"
-  fi
-}
-
-
-# 写入 API端口
-if [[ ! -z "$EXTERNAL_BIND" && ! -z "$EXTERNAL_PORT" ]]
-then
-  modify_config "external-controller" "$EXTERNAL_BIND:$EXTERNAL_PORT"
-  modify_config "external-ui" "/etc/clash-dashboard"
-fi
+echo "修改配置文件中的ui界面指向路径"
+yq eval '.external-controller = env(EXTERNAL_BIND) + ":" + env(EXTERNAL_PORT)' -i "$CONF_FILE"
+yq eval '.external-ui = "/etc/clash-dashboard"'  -i "$CONF_FILE"
 
 # 鉴权信息
-if [[ ! -z "$EXTERNAL_SECRET" ]]
+if [ ! -z "$EXTERNAL_SECRET" ];
 then
-  modify_config "secret" "$EXTERNAL_SECRET"
+  #modify_config "secret" "$EXTERNAL_SECRET"
+  yq eval '.secret = strenv(EXTERNAL_SECRET)' -i "$CONF_FILE"
 fi
+
 # 必须开启局域网连接, 否则外部无法连接
-modify_config "allow-lan" "true"
+#modify_config "allow-lan" "true"
+yq eval '.allow-lan = true' -i "$CONF_FILE"
+yq eval '.mixed-port = env(SOCKET_PORT)' -i "$CONF_FILE"
+yq eval '.port = env(SOCKET_PORT)'  -i "$CONF_FILE"
 
-sed -i "/^port:/d" "$ConfFile"
-sed -i "/^socks-port:/d" "$ConfFile"
+yq eval 'del(.port)' -i "$CONF_FILE"
+yq eval 'del(.socks-port)' -i "$CONF_FILE"
 
-modify_config "mixed-port" "$SOCKET_PORT"
+if [ -f "${CUSTOM_CONF}" ]; then
+  echo  "合并自定义规则文件...${CUSTOM_CONF} ${CONF_FILE}"
+  yq eval-all '
+    select(fileIndex == 0) as $first |
+    select(fileIndex == 1) as $second |
+    ($first *+? $second) |
+    .rules = ($first.rules + $second.rules)
+  ' "$CONF_FILE"  "$CUSTOM_CONF" -i "$CONF_FILE"
+fi
 

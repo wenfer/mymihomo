@@ -1,15 +1,18 @@
 #!/usr/bin/env sh
 
-ConfFile="/root/conf/config.yaml"
+CONF_FILE="/root/conf/config.yaml"
 
-# 设置环境变量
+echo "修改导航页的连接"
+sed -i "s|\${EXTERNAL_PORT}|${EXTERNAL_PORT}|g" /etc/clash-dashboard/index.html
+sed -i "s|\${EXTERNAL_SECRET}|${EXTERNAL_SECRET}|g" /etc/clash-dashboard/index.html
+echo "导航页生成完毕"
 
-dl-clash-conf $ConfFile
+dl-clash-conf $CONF_FILE
 # 启动定时下载配置文件
-if [[ ! -z "$CRON_EXPRESSION" ]]; then
+if [ ! -z "$CRON_EXPRESSION" ]; then
   # 设置环境变量
   CRON_EXPRESSION="${CRON_EXPRESSION:-'1 * * * *'}"
-  SCRIPT="update-clash-conf $ConfFile  >> /root/conf/cron_history 2>&1 &"
+  SCRIPT="update-clash-conf $CONF_FILE  >> /root/conf/cron_history 2>&1 &"
   # 清除现有的定时任务
   crontab -r || true
   crond -f &
@@ -18,5 +21,5 @@ if [[ ! -z "$CRON_EXPRESSION" ]]; then
 fi
 
 # 启动代理
-/clash -d /root/files/ -f $ConfFile
+/clash -d /root/files/ -f $CONF_FILE
 

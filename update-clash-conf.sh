@@ -3,7 +3,7 @@
 ConfFile=$1
 
 # 不需要更新
-if [[ -z "$EXTERNAL_BIND" || -z "$EXTERNAL_PORT" ]]
+if [ -z "$EXTERNAL_BIND" || -z "$EXTERNAL_PORT" ];
 then
   exit 0
 fi
@@ -15,7 +15,7 @@ then
   exit $?
 fi
 # 文件下载成功, 进行更新
-if [[ ! -z "$EXTERNAL_SECRET" ]]
+if [ ! -z "$EXTERNAL_SECRET" ];
 then
   curl -H "Authorization: Bearer $EXTERNAL_SECRET" -X PUT -d "{\"path\": \"$ConfFile\"}" 127.0.0.1:$EXTERNAL_PORT/configs?force=true
 else
