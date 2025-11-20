@@ -1,4 +1,4 @@
-FROM dreamacro/clash-premium:latest
+FROM metacubex/mihomo:latest
 
 
 ADD https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb /root/files/Country.mmdb
