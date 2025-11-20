@@ -21,5 +21,5 @@ if [ ! -z "$CRON_EXPRESSION" ]; then
 fi
 
 # 启动代理
-/clash -d /root/files/ -f $CONF_FILE
+/mihomo -d /root/files/ -f $CONF_FILE
 
