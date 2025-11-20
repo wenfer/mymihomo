@@ -3,8 +3,8 @@
 CONF_FILE="/root/conf/config.yaml"
 
 echo "修改导航页的连接"
-sed -i "s|\${EXTERNAL_PORT}|${EXTERNAL_PORT}|g" /root/clash-dashboard/index.html
-sed -i "s|\${EXTERNAL_SECRET}|${EXTERNAL_SECRET}|g" /root/clash-dashboard/index.html
+sed -i "s|\${EXTERNAL_PORT}|${EXTERNAL_PORT}|g" /root/files/clash-dashboard/index.html
+sed -i "s|\${EXTERNAL_SECRET}|${EXTERNAL_SECRET}|g" /root/files/clash-dashboard/index.html
 echo "导航页生成完毕"
 
 dl-clash-conf $CONF_FILE

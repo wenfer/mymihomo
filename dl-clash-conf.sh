@@ -22,7 +22,7 @@ fi
 
 echo "修改配置文件中的ui界面指向路径"
 yq eval '.external-controller = env(EXTERNAL_BIND) + ":" + env(EXTERNAL_PORT)' -i "$CONF_FILE"
-yq eval '.external-ui = "/root/clash-dashboard"'  -i "$CONF_FILE"
+yq eval '.external-ui = "/root/files/clash-dashboard"'  -i "$CONF_FILE"
 
 # 鉴权信息
 if [ ! -z "$EXTERNAL_SECRET" ];
