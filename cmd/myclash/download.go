@@ -69,7 +69,7 @@ func downloadConfig(confFile string) error {
 	}
 
 	// 渲染导航页
-	indexPath := "/root/files/clash-dashboard/index.html"
+	indexPath := "/root/.config/mihomo/ui/index.html"
 	if err := renderIndex(indexPath); err != nil {
 		fmt.Printf("警告: 渲染导航页失败: %v\n", err)
 	}
@@ -105,7 +105,7 @@ func modifyConfig(config map[string]interface{}) {
 
 	// 设置 external-controller
 	config["external-controller"] = fmt.Sprintf("%s:%s", externalBind, externalPort)
-	config["external-ui"] = "/root/files/clash-dashboard"
+	config["external-ui"] = "/root/.config/mihomo/ui"
 
 	// 设置 secret
 	if secret := os.Getenv("EXTERNAL_SECRET"); secret != "" {

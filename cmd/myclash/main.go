@@ -36,7 +36,7 @@ func main() {
 
 	case "render":
 		renderCmd := flag.NewFlagSet("render", flag.ExitOnError)
-		indexFile := renderCmd.String("o", "/root/files/clash-dashboard/index.html", "导航页输出路径")
+		indexFile := renderCmd.String("o", "/root/.config/mihomo/ui/index.html", "导航页输出路径")
 		renderCmd.Parse(os.Args[2:])
 		if err := renderIndex(*indexFile); err != nil {
 			fmt.Fprintf(os.Stderr, "错误: %v\n", err)

@@ -17,10 +17,9 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 # 运行阶段
 FROM metacubex/mihomo:latest
 
-ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb /root/files/geoip.metadb
-ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat /root/files/geosite.dat
-ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb /root/files/Country.mmdb
-ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat /root/files/geoip.dat
+ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb /root/.config/mihomo/geoip.metadb
+ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat /root/.config/mihomo/geosite.dat
+ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat /root/.config/mihomo/geoip.dat
 
 ADD https://github.com/eorendel/clash-dashboard/archive/refs/heads/main.zip  /tmp/dashboard.zip
 ADD https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz  /tmp/yacd.tar.xz
@@ -52,9 +51,9 @@ ENV CUSTOM_CONF=/root/conf/custom.yaml
 RUN chmod +x /bin/run \
     && chmod +x /bin/myclash \
     && unzip /tmp/dashboard.zip -d /tmp \
-    && mv /tmp/clash-dashboard-main  /root/files/clash-dashboard/dashboard \
+    && mv /tmp/clash-dashboard-main  /root/.config/mihomo/ui/dashboard \
     && tar -Jxf /tmp/yacd.tar.xz -C /tmp \
-    && mv /tmp/public /root/files/clash-dashboard/yacd \
+    && mv /tmp/public /root/.config/mihomo/ui/yacd \
     && rm -f /tmp/dashboard.zip /tmp/yacd.tar.xz
 
 ENTRYPOINT ["run"]
