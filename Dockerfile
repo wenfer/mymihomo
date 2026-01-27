@@ -30,7 +30,7 @@ COPY ./run.sh /bin/run
 # 常用配置（其他配置见 README.md）
 ENV MIXED_PORT="7890"
 ENV CRON_EXPRESSION="1 * * * *"
-ENV CUSTOM_CONF=/root/conf/custom.yaml
+ENV CUSTOM_CONF=/root/.config/mihomo/custom.yaml
 
 RUN chmod +x /bin/run \
     && chmod +x /bin/myclash \
