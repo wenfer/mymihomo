@@ -27,25 +27,9 @@ ADD https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz  /tmp/
 COPY --from=builder /myclash /bin/myclash
 COPY ./run.sh /bin/run
 
-# 配置文件地址
-ENV CONF_URL=http://test.com
-# RESTful API 地址
-ENV EXTERNAL_BIND="0.0.0.0"
-ENV EXTERNAL_PORT="9090"
-# RESTful API 鉴权
-ENV EXTERNAL_SECRET="123456"
-ENV CRON_EXPRESSION="1 * * * *"
-# 代理端口配置
-ENV HTTP_PORT=""
-ENV SOCKS_PORT=""
+# 常用配置（其他配置见 README.md）
 ENV MIXED_PORT="7890"
-# TUN 模式配置
-ENV TUN_ENABLE=false
-ENV TUN_STACK=system
-ENV TUN_AUTO_ROUTE=true
-ENV TUN_AUTO_DETECT=true
-# 其他配置
-ENV BASE64_CONVERT=false
+ENV CRON_EXPRESSION="1 * * * *"
 ENV CUSTOM_CONF=/root/conf/custom.yaml
 
 RUN chmod +x /bin/run \
