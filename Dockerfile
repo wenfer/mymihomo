@@ -1,7 +1,21 @@
+# 构建阶段
+FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG VERSION=dev
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY cmd/ ./cmd/
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags="-s -w -X main.version=${VERSION}" \
+    -o /mymihomo ./cmd/mymihomo/
+
 # 运行阶段
 FROM metacubex/mihomo:latest
-
-ARG TARGETARCH
 
 ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb /root/.config/mihomo/geoip.metadb
 ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat /root/.config/mihomo/geosite.dat
@@ -10,7 +24,7 @@ ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.d
 ADD https://github.com/eorendel/clash-dashboard/archive/refs/heads/main.zip  /tmp/dashboard.zip
 ADD https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz  /tmp/yacd.tar.xz
 
-COPY dist/mymihomo-linux-${TARGETARCH} /bin/mymihomo
+COPY --from=builder /mymihomo /bin/mymihomo
 COPY ./run.sh /bin/run
 
 # 常用配置（其他配置见 README.md）
