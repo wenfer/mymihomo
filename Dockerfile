@@ -34,10 +34,11 @@ ENV CUSTOM_CONF=/root/.config/mihomo/custom.yaml
 
 RUN chmod +x /bin/run \
     && chmod +x /bin/myclash \
-    && unzip /tmp/dashboard.zip -d /tmp \
-    && mv /tmp/clash-dashboard-main  /root/.config/mihomo/ui/dashboard \
-    && tar -Jxf /tmp/yacd.tar.xz -C /tmp \
-    && mv /tmp/public /root/.config/mihomo/ui/yacd \
-    && rm -f /tmp/dashboard.zip /tmp/yacd.tar.xz
+    && mkdir -p /root/.config/mihomo/ui \
+    && cd /tmp && unzip dashboard.zip \
+    && mv clash-dashboard-main /root/.config/mihomo/ui/dashboard \
+    && tar -Jxf yacd.tar.xz \
+    && mv public /root/.config/mihomo/ui/yacd \
+    && rm -f dashboard.zip yacd.tar.xz
 
 ENTRYPOINT ["run"]
