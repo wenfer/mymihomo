@@ -1,4 +1,4 @@
-# myclash
+# mymihomo
 
 基于 [mihomo](https://github.com/MetaCubeX/mihomo) 的 Docker 镜像，提供订阅自动下载、配置覆写和定时更新功能。
 
@@ -18,9 +18,9 @@
 ```yaml
 # docker-compose.yml
 services:
-  myclash:
-    image: ghcr.io/wenfer/myclash:latest
-    container_name: myclash
+  mymihomo:
+    image: ghcr.io/wenfer/mymihomo:latest
+    container_name: mymihomo
     restart: unless-stopped
     ports:
       - 9090:9090  # Web UI
@@ -45,9 +45,9 @@ docker-compose up -d
 
 ```yaml
 services:
-  myclash:
-    image: ghcr.io/wenfer/myclash:latest
-    container_name: myclash
+  mymihomo:
+    image: ghcr.io/wenfer/mymihomo:latest
+    container_name: mymihomo
     restart: unless-stopped
     ports:
       - 9090:9090   # Web UI
@@ -65,9 +65,9 @@ services:
 
 ```yaml
 services:
-  myclash:
-    image: ghcr.io/wenfer/myclash:latest
-    container_name: myclash
+  mymihomo:
+    image: ghcr.io/wenfer/mymihomo:latest
+    container_name: mymihomo
     restart: unless-stopped
     ports:
       - 9090:9090   # Web UI
@@ -88,9 +88,9 @@ services:
 
 ```yaml
 services:
-  myclash:
-    image: ghcr.io/wenfer/myclash:latest
-    container_name: myclash
+  mymihomo:
+    image: ghcr.io/wenfer/mymihomo:latest
+    container_name: mymihomo
     restart: unless-stopped
     privileged: true        # TUN 模式必须
     network_mode: host      # 推荐使用 host 网络
@@ -108,9 +108,9 @@ services:
 
 ```yaml
 services:
-  myclash:
-    image: ghcr.io/wenfer/myclash:latest
-    container_name: myclash
+  mymihomo:
+    image: ghcr.io/wenfer/mymihomo:latest
+    container_name: mymihomo
     restart: unless-stopped
     ports:
       - 9090:9090

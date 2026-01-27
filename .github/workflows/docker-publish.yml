@@ -31,11 +31,11 @@ jobs:
 
           # linux/amd64
           GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" \
-            -o dist/myclash-linux-amd64 ./cmd/myclash/
+            -o dist/mymihomo-linux-amd64 ./cmd/mymihomo/
 
           # linux/arm64
           GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" \
-            -o dist/myclash-linux-arm64 ./cmd/myclash/
+            -o dist/mymihomo-linux-arm64 ./cmd/mymihomo/
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,14 +54,14 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/myclash:${{ github.run_number }}
-            ghcr.io/${{ github.repository_owner }}/myclash:latest
+            ghcr.io/${{ github.repository_owner }}/mymihomo:${{ github.run_number }}
+            ghcr.io/${{ github.repository_owner }}/mymihomo:latest
 
       - name: Upload Release Assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/myclash-linux-amd64
-            dist/myclash-linux-arm64
+            dist/mymihomo-linux-amd64
+            dist/mymihomo-linux-arm64
 

@@ -1,4 +1,4 @@
-# myclash
+# mymihomo
 
 基于 mihomo 的 Docker 镜像构建工具，提供订阅下载、配置修改和定时更新功能。
 
@@ -6,7 +6,7 @@
 
 ```
 .
-├── cmd/myclash/          # Go 源码
+├── cmd/mymihomo/          # Go 源码
 │   ├── main.go           # 入口，命令行解析
 │   ├── download.go       # 下载并处理配置文件
 │   ├── update.go         # 更新运行中的 mihomo 配置
@@ -20,27 +20,27 @@
 
 ```bash
 # 构建
-go build -o myclash ./cmd/myclash/
+go build -o mymihomo ./cmd/mymihomo/
 
 # 交叉编译
-GOOS=linux GOARCH=amd64 go build -o myclash-linux-amd64 ./cmd/myclash/
-GOOS=linux GOARCH=arm64 go build -o myclash-linux-arm64 ./cmd/myclash/
+GOOS=linux GOARCH=amd64 go build -o mymihomo-linux-amd64 ./cmd/mymihomo/
+GOOS=linux GOARCH=arm64 go build -o mymihomo-linux-arm64 ./cmd/mymihomo/
 
 # 本地 Docker 构建测试
-docker build -t myclash:test .
+docker build -t mymihomo:test .
 ```
 
 ## CLI 用法
 
 ```bash
 # 下载配置
-myclash download -o /root/conf/config.yaml
+mymihomo download -o /root/conf/config.yaml
 
 # 更新运行中的配置
-myclash update -c /root/conf/config.yaml
+mymihomo update -c /root/conf/config.yaml
 
 # 查看版本
-myclash version
+mymihomo version
 ```
 
 ## 环境变量

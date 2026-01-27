@@ -25,7 +25,7 @@ const indexTemplate = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>myclash 导航</title>
+    <title>mymihomo 导航</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -123,7 +123,7 @@ const indexTemplate = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <h1>myclash</h1>
+        <h1>mymihomo</h1>
         <div class="button-container">
             <a href="dashboard/#/proxies?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}" class="btn">Dashboard 面板</a>
             <a href="yacd?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}" class="btn btn-secondary">YACD 面板</a>

@@ -10,7 +10,7 @@ ADD https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.d
 ADD https://github.com/eorendel/clash-dashboard/archive/refs/heads/main.zip  /tmp/dashboard.zip
 ADD https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz  /tmp/yacd.tar.xz
 
-COPY dist/myclash-linux-${TARGETARCH} /bin/myclash
+COPY dist/mymihomo-linux-${TARGETARCH} /bin/mymihomo
 COPY ./run.sh /bin/run
 
 # 常用配置（其他配置见 README.md）
@@ -19,7 +19,7 @@ ENV CRON_EXPRESSION="1 * * * *"
 ENV CUSTOM_CONF=/root/.config/mihomo/custom.yaml
 
 RUN chmod +x /bin/run \
-    && chmod +x /bin/myclash \
+    && chmod +x /bin/mymihomo \
     && mkdir -p /root/.config/mihomo/ui \
     && cd /tmp && unzip dashboard.zip \
     && mv clash-dashboard-main /root/.config/mihomo/ui/dashboard \

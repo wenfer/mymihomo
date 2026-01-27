@@ -44,7 +44,7 @@ func main() {
 		}
 
 	case "version":
-		fmt.Printf("myclash %s\n", version)
+		fmt.Printf("mymihomo %s\n", version)
 
 	default:
 		printUsage()
@@ -53,7 +53,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println("用法: myclash <命令> [选项]")
+	fmt.Println("用法: mymihomo <命令> [选项]")
 	fmt.Println()
 	fmt.Println("命令:")
 	fmt.Println("  download  下载并处理配置文件")

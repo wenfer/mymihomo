@@ -1,4 +1,4 @@
-module github.com/wenfer/myclash
+module github.com/wenfer/mymihomo
 
 go 1.23
 
