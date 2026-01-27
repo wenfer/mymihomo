@@ -3,7 +3,7 @@ name: 自动构建推送镜像到ghcr.io
 on:
   push:
     branches:
-      - main
+      - dev-go
     tags:
       - 'v*'
 
@@ -54,6 +54,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
+            ghcr.io/${{ github.repository_owner }}/myclash:${{ github.run_number }}
             ghcr.io/${{ github.repository_owner }}/myclash:latest
 
       - name: Upload Release Assets
