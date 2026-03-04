@@ -2,17 +2,26 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	defaultFetchTimeoutSec = 15
+	defaultFetchRetry      = 2
+)
+
 func downloadConfig(confFile string) error {
-	confURL := os.Getenv("CONF_URL")
+	confURL := strings.TrimSpace(os.Getenv("CONF_URL"))
 	if confURL == "" || confURL == "http://test.com" {
 		return fmt.Errorf("错误: CONF_URL 环境变量未设置或使用了默认值\n\n请在 docker-compose.yml 中配置你的订阅地址:\n  environment:\n    - CONF_URL=https://your-subscription-url")
 	}
@@ -32,9 +41,9 @@ func downloadConfig(confFile string) error {
 	}
 
 	// Base64 转换
-	if os.Getenv("BASE64_CONVERT") == "true" {
+	if getEnvBool("BASE64_CONVERT", false) {
 		fmt.Println("配置文件转换中...")
-		decoded, err := base64.StdEncoding.DecodeString(string(data))
+		decoded, err := decodeBase64(data)
 		if err != nil {
 			return fmt.Errorf("base64 解码失败: %w", err)
 		}
@@ -79,24 +88,65 @@ func downloadConfig(confFile string) error {
 }
 
 func fetchConfig(url string) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Wget/1.21.3")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP 状态码: %d", resp.StatusCode)
+	if strings.HasPrefix(url, "file://") {
+		return os.ReadFile(strings.TrimPrefix(url, "file://"))
 	}
 
-	return io.ReadAll(resp.Body)
+	timeoutSec := getEnvInt("CONF_TIMEOUT_SEC", defaultFetchTimeoutSec)
+	retryCount := getEnvInt("CONF_RETRY", defaultFetchRetry)
+	if retryCount < 0 {
+		retryCount = defaultFetchRetry
+	}
+	client := &http.Client{Timeout: time.Duration(timeoutSec) * time.Second}
+	userAgent := getEnvDefault("CLASH_SUB_UA", "Wget/1.21.3")
+
+	var lastErr error
+	for attempt := 0; attempt <= retryCount; attempt++ {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", userAgent)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = err
+		} else {
+			body, readErr := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if readErr != nil {
+				lastErr = readErr
+			} else if resp.StatusCode != http.StatusOK {
+				lastErr = fmt.Errorf("HTTP 状态码: %d, 响应: %.200s", resp.StatusCode, body)
+			} else {
+				return body, nil
+			}
+		}
+
+		if attempt < retryCount {
+			time.Sleep(time.Duration(attempt+1) * time.Second)
+		}
+	}
+
+	if lastErr == nil {
+		lastErr = errors.New("未知下载错误")
+	}
+	return nil, lastErr
+}
+
+func decodeBase64(data []byte) ([]byte, error) {
+	content := strings.TrimSpace(string(data))
+	decoded, err := base64.StdEncoding.DecodeString(content)
+	if err == nil {
+		return decoded, nil
+	}
+
+	rawDecoded, rawErr := base64.RawStdEncoding.DecodeString(content)
+	if rawErr == nil {
+		return rawDecoded, nil
+	}
+
+	return nil, fmt.Errorf("标准解码失败: %v; Raw 解码失败: %v", err, rawErr)
 }
 
 func modifyConfig(config map[string]interface{}) {
@@ -125,6 +175,8 @@ func modifyConfig(config map[string]interface{}) {
 		if port, err := parsePort(httpPort); err == nil {
 			config["port"] = port
 			fmt.Printf("设置 HTTP 代理端口: %d\n", port)
+		} else {
+			fmt.Printf("警告: HTTP_PORT 无效: %v\n", err)
 		}
 	}
 
@@ -133,6 +185,8 @@ func modifyConfig(config map[string]interface{}) {
 		if port, err := parsePort(socksPort); err == nil {
 			config["socks-port"] = port
 			fmt.Printf("设置 SOCKS5 代理端口: %d\n", port)
+		} else {
+			fmt.Printf("警告: SOCKS_PORT 无效: %v\n", err)
 		}
 	}
 
@@ -141,17 +195,27 @@ func modifyConfig(config map[string]interface{}) {
 		if port, err := parsePort(mixedPort); err == nil {
 			config["mixed-port"] = port
 			fmt.Printf("设置 Mixed 代理端口: %d\n", port)
+		} else {
+			fmt.Printf("警告: MIXED_PORT 无效: %v\n", err)
 		}
+	}
+
+	_, hasHTTPEnv := os.LookupEnv("HTTP_PORT")
+	_, hasSOCKSEnv := os.LookupEnv("SOCKS_PORT")
+	_, hasMixedEnv := os.LookupEnv("MIXED_PORT")
+	if !hasHTTPEnv && !hasSOCKSEnv && !hasMixedEnv {
+		config["mixed-port"] = 7890
+		fmt.Println("未显式配置代理端口，回退设置 Mixed 端口: 7890")
 	}
 
 	// TUN 模式配置
 	if tunEnable := os.Getenv("TUN_ENABLE"); tunEnable == "true" {
 		tunConfig := map[string]interface{}{
-			"enable":              true,
-			"stack":              getEnvDefault("TUN_STACK", "system"),
-			"auto-route":         getEnvBool("TUN_AUTO_ROUTE", true),
+			"enable":                true,
+			"stack":                 getEnvDefault("TUN_STACK", "system"),
+			"auto-route":            getEnvBool("TUN_AUTO_ROUTE", true),
 			"auto-detect-interface": getEnvBool("TUN_AUTO_DETECT", true),
-			"dns-hijack":         []string{"any:53"},
+			"dns-hijack":            []string{"any:53"},
 		}
 		config["tun"] = tunConfig
 		fmt.Println("启用 TUN 模式")
@@ -198,11 +262,31 @@ func getEnvBool(key string, defaultVal bool) bool {
 	if val == "" {
 		return defaultVal
 	}
+	val = strings.ToLower(strings.TrimSpace(val))
 	return val == "true" || val == "1"
 }
 
+func getEnvInt(key string, defaultVal int) int {
+	val := strings.TrimSpace(os.Getenv(key))
+	if val == "" {
+		return defaultVal
+	}
+
+	num, err := strconv.Atoi(val)
+	if err != nil {
+		fmt.Printf("警告: %s=%q 不是合法整数，使用默认值: %d\n", key, val, defaultVal)
+		return defaultVal
+	}
+	return num
+}
+
 func parsePort(s string) (int, error) {
-	var port int
-	_, err := fmt.Sscanf(s, "%d", &port)
-	return port, err
+	port, err := strconv.Atoi(strings.TrimSpace(s))
+	if err != nil {
+		return 0, fmt.Errorf("端口格式错误: %w", err)
+	}
+	if port < 1 || port > 65535 {
+		return 0, fmt.Errorf("端口范围必须在 1-65535，当前: %d", port)
+	}
+	return port, nil
 }

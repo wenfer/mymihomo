@@ -9,6 +9,10 @@ import (
 var version = "dev"
 
 func main() {
+	if err := loadPersistedEnv(); err != nil {
+		fmt.Fprintf(os.Stderr, "警告: 加载持久化配置失败: %v\n", err)
+	}
+
 	// 子命令
 	if len(os.Args) < 2 {
 		printUsage()
@@ -46,6 +50,17 @@ func main() {
 	case "version":
 		fmt.Printf("mymihomo %s\n", version)
 
+	case "serve":
+		serveCmd := flag.NewFlagSet("serve", flag.ExitOnError)
+		addr := serveCmd.String("addr", ":"+getEnvDefault("WEB_CONFIG_PORT", "18080"), "配置服务监听地址")
+		confFile := serveCmd.String("c", getEnvDefault("CONF_FILE", "/root/conf/config.yaml"), "配置文件路径")
+		envFile := serveCmd.String("e", getWebEnvFile(), "持久化环境变量文件")
+		serveCmd.Parse(os.Args[2:])
+		if err := serveConfigAPI(*addr, *confFile, *envFile); err != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", err)
+			os.Exit(1)
+		}
+
 	default:
 		printUsage()
 		os.Exit(1)
@@ -60,4 +75,5 @@ func printUsage() {
 	fmt.Println("  update    更新运行中的mihomo配置")
 	fmt.Println("  render    渲染导航页")
 	fmt.Println("  version   显示版本信息")
+	fmt.Println("  serve     启动配置 API 服务")
 }
