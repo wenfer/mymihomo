@@ -4,18 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 func updateConfig(confFile string) error {
-	externalBind := os.Getenv("EXTERNAL_BIND")
-	externalPort := os.Getenv("EXTERNAL_PORT")
-
-	// 不需要更新
-	if externalBind == "" || externalPort == "" {
-		return nil
-	}
+	externalPort := getEnvDefault("EXTERNAL_PORT", "9090")
 
 	// 先下载配置
 	if err := downloadConfig(confFile); err != nil {
@@ -39,7 +35,7 @@ func updateConfig(confFile string) error {
 		req.Header.Set("Authorization", "Bearer "+secret)
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("更新配置失败: %w", err)
@@ -47,7 +43,8 @@ func updateConfig(confFile string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("更新配置失败, HTTP 状态码: %d", resp.StatusCode)
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("更新配置失败, HTTP 状态码: %d, 响应: %.200s", resp.StatusCode, respBody)
 	}
 
 	fmt.Println("配置更新成功")

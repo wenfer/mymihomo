@@ -48,9 +48,17 @@ mymihomo version
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | CONF_URL | 订阅地址 | 必填 |
+| CONF_FILE | 容器内配置文件路径 | /root/conf/config.yaml |
+| MIHOMO_HOME | mihomo 工作目录 | /root/.config/mihomo |
+| WEB_CONFIG_PORT | Web 配置 API 监听端口 | 18080 |
+| WEB_ENV_FILE | Web 配置持久化文件路径 | /root/conf/web.env |
+| WEB_API_LOG | Web 配置 API 日志文件 | /root/conf/web_api.log |
 | EXTERNAL_BIND | API 绑定地址 | 0.0.0.0 |
 | EXTERNAL_PORT | API 端口 | 9090 |
 | EXTERNAL_SECRET | API 鉴权密钥 | - |
+| CONF_TIMEOUT_SEC | 订阅下载超时秒数 | 15 |
+| CONF_RETRY | 订阅下载重试次数 | 2 |
+| CRON_LOG | 定时更新日志文件 | /root/conf/cron_history |
 | HTTP_PORT | HTTP 代理端口 | - |
 | SOCKS_PORT | SOCKS5 代理端口 | - |
 | MIXED_PORT | 混合代理端口 (HTTP+SOCKS5) | 7890 |
