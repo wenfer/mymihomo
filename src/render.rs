@@ -9,175 +9,205 @@ const INDEX_TEMPLATE: &str = r#"<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mymihomo 控制中心</title>
+    <title>mymihomo 控制台</title>
     <style>
         :root {
-            --bg-1: #f2efe8;
-            --bg-2: #dbe8e6;
+            --bg: #f8fafc;
             --card: #ffffff;
-            --ink: #14212b;
-            --sub: #52606d;
-            --line: #d5dde5;
+            --ink: #0f172a;
+            --sub: #475569;
+            --line: #e2e8f0;
             --brand: #0f766e;
-            --brand-2: #0b4f6c;
-            --warn: #b45309;
-            --ok: #166534;
+            --brand-hover: #115e59;
+            --radius: 6px;
+            --ok: #15803d;
             --bad: #b91c1c;
+            --warn: #b45309;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", sans-serif;
-            background: radial-gradient(circle at 20% 20%, var(--bg-2), var(--bg-1) 52%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
             color: var(--ink);
             min-height: 100vh;
-            padding: 24px 16px 56px;
+            padding: 32px 16px 64px;
+            -webkit-font-smoothing: antialiased;
         }
         .wrap {
-            max-width: 980px;
+            max-width: 920px;
             margin: 0 auto;
         }
-        .hero {
-            margin-bottom: 18px;
-            padding: 22px;
-            border-radius: 16px;
-            background: linear-gradient(120deg, rgba(15,118,110,0.16), rgba(11,79,108,0.14));
-            border: 1px solid rgba(15,118,110,0.2);
+        .header {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
         }
-        .hero h1 { font-size: 30px; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .hero p { color: var(--sub); font-size: 14px; }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            margin-bottom: 4px;
+        }
+        .header p {
+            color: var(--sub);
+            font-size: 13px;
+        }
         .grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 14px;
+            gap: 16px;
         }
         .card {
             background: var(--card);
             border: 1px solid var(--line);
-            border-radius: 16px;
-            padding: 18px;
-            box-shadow: 0 10px 24px rgba(20, 33, 43, 0.06);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
         .card h2 {
-            font-size: 17px;
-            margin-bottom: 12px;
-            letter-spacing: 0.3px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--ink);
         }
         .muted {
             color: var(--sub);
             font-size: 13px;
-            line-height: 1.55;
-            margin-bottom: 12px;
+            line-height: 1.5;
+            margin-bottom: 14px;
         }
         .nav-row {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 10px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 11px 14px;
-            border-radius: 10px;
-            border: 1px solid transparent;
+            padding: 9px 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
             text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: transform .12s ease, box-shadow .2s ease, border-color .2s ease;
-        }
-        .btn:hover { transform: translateY(-1px); }
-        .btn-main {
-            background: linear-gradient(120deg, var(--brand), var(--brand-2));
-            color: #fff;
-            box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
-        }
-        .btn-soft {
-            background: #f3f9f8;
-            color: #0f4d47;
-            border-color: #b7e0da;
-        }
-        .btn-alt {
-            background: #fef7ed;
-            color: #9a3412;
-            border-color: #fed7aa;
-        }
-        .status {
-            border-radius: 10px;
-            padding: 10px 12px;
+            font-weight: 500;
             font-size: 13px;
-            line-height: 1.45;
-            border: 1px solid;
-            margin-bottom: 12px;
-            background: #f8fafc;
-            color: #334155;
+            cursor: pointer;
+            transition: background-color .15s ease, border-color .15s ease;
+        }
+        .btn-main {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+        .btn-main:hover {
+            background: var(--brand-hover);
+            border-color: var(--brand-hover);
+        }
+        .btn-secondary {
+            background: #fff;
+            color: var(--ink);
+            border-color: var(--line);
+        }
+        .btn-secondary:hover {
+            background: #f1f5f9;
             border-color: #cbd5e1;
         }
-        .status.ok { color: var(--ok); border-color: #bbf7d0; background: #f0fdf4; }
-        .status.err { color: var(--bad); border-color: #fecaca; background: #fef2f2; }
-        .status.warn { color: var(--warn); border-color: #fde68a; background: #fffbeb; }
+        .status {
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.4;
+            border: 1px solid var(--line);
+            margin-bottom: 14px;
+            background: #f8fafc;
+            color: var(--sub);
+        }
+        .status.ok {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: var(--ok);
+        }
+        .status.err {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: var(--bad);
+        }
+        .status.warn {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: var(--warn);
+        }
         form {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            gap: 12px;
         }
         .field { display: flex; flex-direction: column; gap: 5px; }
         .field.full { grid-column: 1 / -1; }
-        label { font-size: 12px; color: #334155; font-weight: 600; letter-spacing: 0.2px; }
+        label { font-size: 12px; color: var(--sub); font-weight: 500; }
         input, select {
             width: 100%;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 9px 10px;
-            font-size: 14px;
-            font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
             color: var(--ink);
             background: #fff;
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
         input:focus, select:focus {
             outline: none;
-            border-color: #0f766e;
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+            border-color: var(--brand);
+            box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
         }
-        .check { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .check input { width: auto; }
+        .check { display: flex; align-items: center; gap: 8px; margin-top: 6px; cursor: pointer; }
+        .check input { width: auto; cursor: pointer; }
         .actions {
             grid-column: 1 / -1;
             display: flex;
             gap: 10px;
-            padding-top: 6px;
+            padding-top: 8px;
         }
         .meta {
             margin-top: 12px;
             font-size: 12px;
-            color: #64748b;
-            line-height: 1.6;
+            color: var(--sub);
+            line-height: 1.5;
+        }
+        code {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; /* deslop-ignore 34 */
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--ink);
         }
         @media (max-width: 860px) {
             .nav-row, form { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 26px; }
         }
     </style>
 </head>
 <body>
     <div class="wrap">
-        <section class="hero">
-            <h1>mymihomo 控制中心</h1>
-            <p>导航 + 在线配置。你可以直接在这里维护订阅和端口配置，再一键应用到运行中的 mihomo。</p>
-        </section>
+        <header class="header">
+            <h1>mymihomo 控制台</h1>
+            <p>管理节点订阅与端口映射，保存后热重载生效。</p>
+        </header>
 
         <div class="grid">
             <section class="card">
-                <h2>面板导航</h2>
-                <p class="muted">保留原有导航能力，链接会根据当前配置自动更新。</p>
+                <h2>仪表盘入口</h2>
+                <p class="muted">外部面板直达链接，自动携带当前端口与密钥：</p>
                 <div class="nav-row">
-                    <a id="dashboard-link" class="btn btn-main" href="dashboard/#/proxies?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}">Dashboard</a>
-                    <a id="yacd-link" class="btn btn-soft" href="yacd?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}">YACD</a>
-                    <a id="zashboard-link" class="btn btn-alt" href="zashboard/?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}">zashboard</a>
+                    <a id="dashboard-link" class="btn btn-secondary" href="dashboard/#/proxies?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}">Dashboard</a>
+                    <a id="yacd-link" class="btn btn-secondary" href="yacd?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}">YACD</a>
+                    <a id="zashboard-link" class="btn btn-secondary" href="zashboard/?hostname={{.ExternalPort}}&secret={{.ExternalSecret}}">zashboard</a>
                 </div>
                 <div class="meta">
-                    当前端口: {{.ExternalPort}} | Mixed: {{.MixedPort}} | 更新于: {{.UpdateTime}}
+                    当前端口: <code>{{.ExternalPort}}</code> | Mixed 代理: <code>{{.MixedPort}}</code> | 上次更新: {{.UpdateTime}}
                 </div>
             </section>
 
@@ -251,11 +281,11 @@ const INDEX_TEMPLATE: &str = r#"<!DOCTYPE html>
 
                     <div class="actions">
                         <button type="submit" class="btn btn-main">保存并应用</button>
-                        <button id="save-only" type="button" class="btn btn-soft">仅保存</button>
-                        <button id="reload" type="button" class="btn btn-soft">重新加载</button>
+                        <button id="save-only" type="button" class="btn btn-secondary">仅保存</button>
+                        <button id="reload" type="button" class="btn btn-secondary">重新拉取</button>
                     </div>
                 </form>
-                <div class="meta">配置接口: <code id="api-base"></code>。如果加载失败，请在容器端口映射中暴露 WEB_CONFIG_PORT（默认 18080）。</div>
+                <div class="meta">接口地址: <code id="api-base"></code>。如无法连通，请确认容器已暴露 <code>WEB_CONFIG_PORT</code> 映射端口。</div>
             </section>
         </div>
     </div>
