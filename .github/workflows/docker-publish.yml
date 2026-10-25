@@ -3,7 +3,8 @@ name: 自动构建推送镜像到ghcr.io
 on:
   push:
     branches:
-      - dev-go
+      - dev-rust
+      - main
     tags:
       - 'v*'
 
@@ -18,6 +19,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -35,15 +39,23 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ github.ref_name }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/mymihomo:${{ github.run_number }}
             ghcr.io/${{ github.repository_owner }}/mymihomo:latest
 
-      - name: Set up Go (for Release binaries)
+      - name: Set up Rust (for Release binaries)
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/setup-go@v5
+        uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: '1.23'
+          targets: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl
+
+      - name: Install zig & cargo-zigbuild
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          pip install ziglang
+          cargo install cargo-zigbuild
 
       - name: Build Release binaries
         if: startsWith(github.ref, 'refs/tags/')
@@ -52,12 +64,12 @@ jobs:
           mkdir -p dist
 
           # linux/amd64
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" \
-            -o dist/mymihomo-linux-amd64 ./cmd/mymihomo/
+          VERSION=${VERSION} cargo zigbuild --release --target x86_64-unknown-linux-musl
+          cp target/x86_64-unknown-linux-musl/release/mymihomo dist/mymihomo-linux-amd64
 
           # linux/arm64
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" \
-            -o dist/mymihomo-linux-arm64 ./cmd/mymihomo/
+          VERSION=${VERSION} cargo zigbuild --release --target aarch64-unknown-linux-musl
+          cp target/aarch64-unknown-linux-musl/release/mymihomo dist/mymihomo-linux-arm64
 
       - name: Upload Release Assets
         if: startsWith(github.ref, 'refs/tags/')
@@ -66,4 +78,3 @@ jobs:
           files: |
             dist/mymihomo-linux-amd64
             dist/mymihomo-linux-arm64
-

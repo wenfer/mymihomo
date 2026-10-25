@@ -1,30 +1,38 @@
 # mymihomo
 
-基于 mihomo 的 Docker 镜像构建工具，提供订阅下载、配置修改和定时更新功能。
+基于 mihomo 的 Docker 镜像构建工具，提供订阅下载、配置修改、导航页渲染、配置 API 服务和定时更新功能。辅助二进制工具使用 Rust 编写。
 
 ## 项目结构
 
 ```
 .
-├── cmd/mymihomo/          # Go 源码
-│   ├── main.go           # 入口，命令行解析
-│   ├── download.go       # 下载并处理配置文件
-│   ├── update.go         # 更新运行中的 mihomo 配置
-│   └── render.go         # 渲染导航页模板
+├── src/                  # Rust 源码
+│   ├── main.rs           # 入口，CLI 命令行解析与分发
+│   ├── download.rs       # 下载并处理配置文件（YAML修改/规则合并）
+│   ├── update.rs         # 调用 REST API 更新运行中的 mihomo 配置
+│   ├── render.rs         # 渲染导航页模板
+│   ├── serve.rs          # Axum Web 配置 API 服务
+│   └── envfile.rs        # web.env 持久化配置读写
+├── Cargo.toml            # Rust 包管理与依赖
+├── Cargo.lock            # 依赖锁定文件
 ├── run.sh                # 容器启动脚本
-├── Dockerfile            # 多阶段构建
-└── .github/workflows/    # CI/CD
+├── Dockerfile            # 多阶段构建 (rust:alpine -> metacubex/mihomo)
+└── .github/workflows/    # CI/CD (多架构镜像构建与 GitHub Release)
 ```
 
 ## 开发命令
 
 ```bash
-# 构建
-go build -o mymihomo ./cmd/mymihomo/
+# 检查与运行测试
+cargo check
+cargo test
 
-# 交叉编译
-GOOS=linux GOARCH=amd64 go build -o mymihomo-linux-amd64 ./cmd/mymihomo/
-GOOS=linux GOARCH=arm64 go build -o mymihomo-linux-arm64 ./cmd/mymihomo/
+# 构建 Release
+cargo build --release
+
+# 交叉编译 (使用 cargo-zigbuild)
+cargo zigbuild --release --target x86_64-unknown-linux-musl
+cargo zigbuild --release --target aarch64-unknown-linux-musl
 
 # 本地 Docker 构建测试
 docker build -t mymihomo:test .
@@ -38,6 +46,12 @@ mymihomo download -o /root/conf/config.yaml
 
 # 更新运行中的配置
 mymihomo update -c /root/conf/config.yaml
+
+# 渲染导航页
+mymihomo render -o /root/.config/mihomo/ui/index.html
+
+# 启动配置 API 服务
+mymihomo serve --addr :18080 -c /root/conf/config.yaml -e /root/conf/web.env
 
 # 查看版本
 mymihomo version
@@ -72,8 +86,8 @@ mymihomo version
 
 ## 依赖
 
-- Go 1.23+
-- gopkg.in/yaml.v3 (唯一外部依赖)
+- Rust 1.75+ (Edition 2021)
+- tokio, axum, reqwest, serde, serde_yaml, clap
 
 ## 发布流程
 
@@ -86,8 +100,3 @@ git push origin v1.0.0
 会自动构建并发布：
 - Docker 多架构镜像 (amd64/arm64)
 - 二进制文件 Release
-
-更新当前文档条件
-- 本文档有与实际不符或冲
-- 新增源码文件
-- 重构项目或文件更新定义

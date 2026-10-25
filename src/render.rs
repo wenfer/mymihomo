@@ -1,27 +1,10 @@
-package main
+use crate::envfile::get_env_default;
+use chrono::Local;
+use std::fs::{self, File};
+use std::io::Write;
+use std::path::Path;
 
-import (
-	"fmt"
-	"html/template"
-	"os"
-	"path/filepath"
-	"time"
-)
-
-type PageData struct {
-	ExternalPort   string
-	ExternalSecret string
-	HTTPPort       string
-	SocksPort      string
-	MixedPort      string
-	TUNEnable      bool
-	TUNStack       string
-	UpdateTime     string
-	CronExpression string
-	WebConfigPort  string
-}
-
-const indexTemplate = `<!DOCTYPE html>
+const INDEX_TEMPLATE: &str = r#"<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -384,41 +367,30 @@ const indexTemplate = `<!DOCTYPE html>
         loadConfig();
     </script>
 </body>
-</html>`
+</html>"#;
 
-func renderIndex(outputPath string) error {
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return fmt.Errorf("创建目录失败: %w", err)
-	}
+pub fn render_index(output_path: &str) -> anyhow::Result<()> {
+    let p = Path::new(output_path);
+    if let Some(parent) = p.parent() {
+        fs::create_dir_all(parent)?;
+    }
 
-	data := PageData{
-		ExternalPort:   getEnvDefault("EXTERNAL_PORT", "9090"),
-		ExternalSecret: os.Getenv("EXTERNAL_SECRET"),
-		HTTPPort:       os.Getenv("HTTP_PORT"),
-		SocksPort:      os.Getenv("SOCKS_PORT"),
-		MixedPort:      os.Getenv("MIXED_PORT"),
-		TUNEnable:      os.Getenv("TUN_ENABLE") == "true",
-		TUNStack:       getEnvDefault("TUN_STACK", "system"),
-		CronExpression: getEnvDefault("CRON_EXPRESSION", "1 * * * *"),
-		WebConfigPort:  getEnvDefault("WEB_CONFIG_PORT", "18080"),
-		UpdateTime:     time.Now().Format("2006-01-02 15:04:05"),
-	}
+    let external_port = get_env_default("EXTERNAL_PORT", "9090");
+    let external_secret = std::env::var("EXTERNAL_SECRET").unwrap_or_default();
+    let mixed_port = std::env::var("MIXED_PORT").unwrap_or_default();
+    let web_config_port = get_env_default("WEB_CONFIG_PORT", "18080");
+    let update_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-	tmpl, err := template.New("index").Parse(indexTemplate)
-	if err != nil {
-		return fmt.Errorf("解析模板失败: %w", err)
-	}
+    let rendered = INDEX_TEMPLATE
+        .replace("{{.ExternalPort}}", &external_port)
+        .replace("{{.ExternalSecret}}", &external_secret)
+        .replace("{{.MixedPort}}", &mixed_port)
+        .replace("{{.UpdateTime}}", &update_time)
+        .replace("{{.WebConfigPort}}", &web_config_port);
 
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("创建文件失败: %w", err)
-	}
-	defer file.Close()
+    let mut file = File::create(p)?;
+    file.write_all(rendered.as_bytes())?;
 
-	if err := tmpl.Execute(file, data); err != nil {
-		return fmt.Errorf("渲染模板失败: %w", err)
-	}
-
-	fmt.Printf("导航页已更新: %s\n", outputPath)
-	return nil
+    println!("导航页已更新: {}", output_path);
+    Ok(())
 }

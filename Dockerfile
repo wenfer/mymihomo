@@ -1,18 +1,16 @@
 # 构建阶段
-FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
+FROM rust:alpine AS builder
 
-ARG TARGETOS
-ARG TARGETARCH
 ARG VERSION=dev
 
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
+RUN apk add --no-cache musl-dev
 
-COPY cmd/ ./cmd/
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w -X main.version=${VERSION}" \
-    -o /mymihomo ./cmd/mymihomo/
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release && rm -rf src
+
+COPY src/ ./src/
+RUN touch src/main.rs && VERSION=${VERSION} cargo build --release && cp target/release/mymihomo /mymihomo
 
 # 运行阶段
 FROM metacubex/mihomo:latest
