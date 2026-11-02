@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -32,7 +34,7 @@ func downloadConfig(confFile string) error {
 		return fmt.Errorf("创建目录失败: %w", err)
 	}
 
-	fmt.Printf("从 %s 下载配置文件并写入到 %s\n", confURL, confFile)
+	logInfo("从 %s 下载配置文件并写入到 %s", confURL, confFile)
 
 	// 下载配置文件
 	data, err := fetchConfig(confURL)
@@ -42,7 +44,7 @@ func downloadConfig(confFile string) error {
 
 	// Base64 转换
 	if getEnvBool("BASE64_CONVERT", false) {
-		fmt.Println("配置文件转换中...")
+		logInfo("配置文件 base64 解码转换中...")
 		decoded, err := decodeBase64(data)
 		if err != nil {
 			return fmt.Errorf("base64 解码失败: %w", err)
@@ -63,7 +65,7 @@ func downloadConfig(confFile string) error {
 	customConf := os.Getenv("CUSTOM_CONF")
 	if customConf != "" {
 		if err := mergeCustomRules(config, customConf); err != nil {
-			fmt.Printf("警告: 合并自定义规则失败: %v\n", err)
+			logWarn("合并自定义规则失败: %v", err)
 		}
 	}
 
@@ -78,18 +80,63 @@ func downloadConfig(confFile string) error {
 	}
 
 	// 渲染导航页
-	indexPath := "/root/.config/mihomo/ui/index.html"
+	mihomoHome := getEnvDefault("MIHOMO_HOME", "/root/.config/mihomo")
+	indexPath := filepath.Join(mihomoHome, "ui", "index.html")
 	if err := renderIndex(indexPath); err != nil {
-		fmt.Printf("警告: 渲染导航页失败: %v\n", err)
+		logWarn("渲染导航页失败: %v", err)
 	}
 
-	fmt.Println("配置文件处理完成")
+	logInfo("配置文件处理完成")
 	return nil
 }
 
-func fetchConfig(url string) ([]byte, error) {
-	if strings.HasPrefix(url, "file://") {
-		return os.ReadFile(strings.TrimPrefix(url, "file://"))
+func isTCPPortOpen(host, port string) bool {
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 500*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
+
+func fetchWithProxy(urlStr, proxyURLStr string, timeoutSec int, userAgent string) ([]byte, error) {
+	parsedProxy, err := url.Parse(proxyURLStr)
+	if err != nil {
+		return nil, err
+	}
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(parsedProxy),
+	}
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   time.Duration(timeoutSec) * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", userAgent)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP 状态码: %d, 响应: %.200s", resp.StatusCode, body)
+	}
+	return body, nil
+}
+
+func fetchConfig(fetchURL string) ([]byte, error) {
+	if strings.HasPrefix(fetchURL, "file://") {
+		return os.ReadFile(strings.TrimPrefix(fetchURL, "file://"))
 	}
 
 	timeoutSec := getEnvInt("CONF_TIMEOUT_SEC", defaultFetchTimeoutSec)
@@ -102,7 +149,7 @@ func fetchConfig(url string) ([]byte, error) {
 
 	var lastErr error
 	for attempt := 0; attempt <= retryCount; attempt++ {
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("GET", fetchURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -125,6 +172,22 @@ func fetchConfig(url string) ([]byte, error) {
 
 		if attempt < retryCount {
 			time.Sleep(time.Duration(attempt+1) * time.Second)
+		}
+	}
+
+	// 直连重试耗尽后，若本地代理可用（例如 mihomo 正在运行），尝试通过本地代理拉取
+	localProxyPort := os.Getenv("HTTP_PORT")
+	if localProxyPort == "" {
+		localProxyPort = getEnvDefault("MIXED_PORT", "7890")
+	}
+	if isTCPPortOpen("127.0.0.1", localProxyPort) {
+		proxyURL := fmt.Sprintf("http://127.0.0.1:%s", localProxyPort)
+		logInfo("直连下载失败，尝试通过运行中的本地代理 %s 重试...", proxyURL)
+		if proxyBody, proxyErr := fetchWithProxy(fetchURL, proxyURL, timeoutSec, userAgent); proxyErr == nil {
+			logInfo("通过本地代理下载成功")
+			return proxyBody, nil
+		} else {
+			logWarn("通过本地代理重试失败: %v", proxyErr)
 		}
 	}
 
@@ -174,9 +237,9 @@ func modifyConfig(config map[string]interface{}) {
 	if httpPort := os.Getenv("HTTP_PORT"); httpPort != "" {
 		if port, err := parsePort(httpPort); err == nil {
 			config["port"] = port
-			fmt.Printf("设置 HTTP 代理端口: %d\n", port)
+			logInfo("设置 HTTP 代理端口: %d", port)
 		} else {
-			fmt.Printf("警告: HTTP_PORT 无效: %v\n", err)
+			logWarn("HTTP_PORT 无效: %v", err)
 		}
 	}
 
@@ -184,9 +247,9 @@ func modifyConfig(config map[string]interface{}) {
 	if socksPort := os.Getenv("SOCKS_PORT"); socksPort != "" {
 		if port, err := parsePort(socksPort); err == nil {
 			config["socks-port"] = port
-			fmt.Printf("设置 SOCKS5 代理端口: %d\n", port)
+			logInfo("设置 SOCKS5 代理端口: %d", port)
 		} else {
-			fmt.Printf("警告: SOCKS_PORT 无效: %v\n", err)
+			logWarn("SOCKS_PORT 无效: %v", err)
 		}
 	}
 
@@ -194,9 +257,9 @@ func modifyConfig(config map[string]interface{}) {
 	if mixedPort := os.Getenv("MIXED_PORT"); mixedPort != "" {
 		if port, err := parsePort(mixedPort); err == nil {
 			config["mixed-port"] = port
-			fmt.Printf("设置 Mixed 代理端口: %d\n", port)
+			logInfo("设置 Mixed 代理端口: %d", port)
 		} else {
-			fmt.Printf("警告: MIXED_PORT 无效: %v\n", err)
+			logWarn("MIXED_PORT 无效: %v", err)
 		}
 	}
 
@@ -205,7 +268,7 @@ func modifyConfig(config map[string]interface{}) {
 	_, hasMixedEnv := os.LookupEnv("MIXED_PORT")
 	if !hasHTTPEnv && !hasSOCKSEnv && !hasMixedEnv {
 		config["mixed-port"] = 7890
-		fmt.Println("未显式配置代理端口，回退设置 Mixed 端口: 7890")
+		logInfo("未显式配置代理端口，回退设置 Mixed 端口: 7890")
 	}
 
 	// TUN 模式配置
@@ -218,10 +281,10 @@ func modifyConfig(config map[string]interface{}) {
 			"dns-hijack":            []string{"any:53"},
 		}
 		config["tun"] = tunConfig
-		fmt.Println("启用 TUN 模式")
+		logInfo("启用 TUN 模式")
 	}
 
-	fmt.Println("修改配置文件中的ui界面指向路径")
+	logInfo("修改配置文件中的ui界面指向路径")
 }
 
 func mergeCustomRules(config map[string]interface{}, customConfPath string) error {
@@ -229,7 +292,7 @@ func mergeCustomRules(config map[string]interface{}, customConfPath string) erro
 		return nil
 	}
 
-	fmt.Printf("合并自定义规则文件... %s\n", customConfPath)
+	logInfo("合并自定义规则文件... %s", customConfPath)
 
 	data, err := os.ReadFile(customConfPath)
 	if err != nil {

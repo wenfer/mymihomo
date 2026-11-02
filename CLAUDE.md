@@ -7,10 +7,14 @@
 ```
 .
 ├── cmd/mymihomo/          # Go 源码
-│   ├── main.go           # 入口，命令行解析
-│   ├── download.go       # 下载并处理配置文件
-│   ├── update.go         # 更新运行中的 mihomo 配置
-│   └── render.go         # 渲染导航页模板
+│   ├── main.go           # 入口，命令行解析与分发
+│   ├── download.go       # 下载并处理配置文件（支持本地代理回退）
+│   ├── update.go         # 原子更新、配置语法预检与热重载
+│   ├── cron.go           # 定时任务同步与 crond 守护进程管理
+│   ├── envfile.go        # web.env 持久化配置读写
+│   ├── logger.go         # 统一带时间戳的标准日志工具
+│   ├── render.go         # 渲染导航页模板
+│   └── serve.go          # Web 配置 API 服务
 ├── run.sh                # 容器启动脚本
 ├── Dockerfile            # 多阶段构建
 └── .github/workflows/    # CI/CD
@@ -19,6 +23,9 @@
 ## 开发命令
 
 ```bash
+# 运行单元测试
+go test -v ./cmd/mymihomo/...
+
 # 构建
 go build -o mymihomo ./cmd/mymihomo/
 
@@ -38,6 +45,12 @@ mymihomo download -o /root/conf/config.yaml
 
 # 更新运行中的配置
 mymihomo update -c /root/conf/config.yaml
+
+# 同步定时更新任务
+mymihomo sync-cron
+
+# 启动配置 API 服务
+mymihomo serve -addr :18080 -c /root/conf/config.yaml -e /root/conf/web.env
 
 # 查看版本
 mymihomo version

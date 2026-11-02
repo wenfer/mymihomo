@@ -25,8 +25,9 @@ func loadPersistedEnv() error {
 	}
 
 	for key, value := range values {
-		if strings.TrimSpace(os.Getenv(key)) == "" {
-			if err := os.Setenv(key, value); err != nil {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			if err := os.Setenv(key, trimmed); err != nil {
 				return fmt.Errorf("设置环境变量失败: %s: %w", key, err)
 			}
 		}

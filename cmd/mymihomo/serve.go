@@ -204,6 +204,11 @@ func (s *configServer) saveConfig(raw map[string]string, apply bool) error {
 		return fmt.Errorf("写入配置文件失败: %w", err)
 	}
 
+	// 无论仅保存还是保存并应用，均同步定时任务配置到 crontab
+	if err := syncCrontab(); err != nil {
+		logWarn("同步定时任务失败: %v", err)
+	}
+
 	if !apply {
 		return nil
 	}
@@ -250,6 +255,13 @@ func normalizeConfigValue(key, value string) (string, error) {
 			return "", fmt.Errorf("%s 必须是非负整数", key)
 		}
 		return strconv.Itoa(num), nil
+	}
+
+	if key == "CRON_EXPRESSION" {
+		if err := validateCronExpression(value); err != nil {
+			return "", err
+		}
+		return value, nil
 	}
 
 	return value, nil

@@ -50,6 +50,14 @@ func main() {
 	case "version":
 		fmt.Printf("mymihomo %s\n", version)
 
+	case "sync-cron":
+		syncCmd := flag.NewFlagSet("sync-cron", flag.ExitOnError)
+		syncCmd.Parse(os.Args[2:])
+		if err := syncCrontab(); err != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", err)
+			os.Exit(1)
+		}
+
 	case "serve":
 		serveCmd := flag.NewFlagSet("serve", flag.ExitOnError)
 		addr := serveCmd.String("addr", ":"+getEnvDefault("WEB_CONFIG_PORT", "18080"), "配置服务监听地址")
@@ -76,4 +84,5 @@ func printUsage() {
 	fmt.Println("  render    渲染导航页")
 	fmt.Println("  version   显示版本信息")
 	fmt.Println("  serve     启动配置 API 服务")
+	fmt.Println("  sync-cron 同步定时更新任务")
 }

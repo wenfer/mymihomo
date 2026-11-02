@@ -1,3 +1,7 @@
 .idea
-.vscodecmd/.DS_Store
+.vscode
 .DS_Store
+target/
+dist/
+*.env
+*.log
